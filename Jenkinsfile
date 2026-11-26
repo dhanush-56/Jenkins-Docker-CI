@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -7,6 +8,7 @@ pipeline {
     }
 
     stages {
+
         stage('1. Checkout Code') {
             steps {
                 checkout scm
@@ -14,31 +16,44 @@ pipeline {
         }
 
         stage('2. Application Build & Test') {
-    steps {
-        bat '''
-            python --version
-            python app.py
-        '''
-    }
-}
+            steps {
+                bat '''
+                    echo Checking Python installation...
+                    where python
+                    python --version
+
+                    echo Running application...
+                    python app.py
+                '''
+            }
+        }
 
         stage('3. Build & Tag Docker Image') {
             steps {
-                bat "docker build -t ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} -t ${REGISTRY}/${IMAGE_NAME}:latest ."
+                bat '''
+                    docker --version
+                    docker build -t %REGISTRY%/%IMAGE_NAME%:%BUILD_NUMBER% -t %REGISTRY%/%IMAGE_NAME%:latest .
+                '''
             }
         }
 
         stage('4. Push Image to Registry') {
             steps {
-                bat "docker push ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
-                bat "docker push ${REGISTRY}/${IMAGE_NAME}:latest"
+                bat '''
+                    docker push %REGISTRY%/%IMAGE_NAME%:%BUILD_NUMBER%
+                    docker push %REGISTRY%/%IMAGE_NAME%:latest
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline succeeded! Image ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} is available locally and in the registry."
+            echo "Pipeline succeeded! Docker image pushed successfully."
+        }
+
+        failure {
+            echo "Pipeline failed. Check the console output for errors."
         }
     }
 }
